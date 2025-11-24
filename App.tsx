@@ -93,6 +93,10 @@ const EditorWorkspace = () => {
   const [isChatGenerating, setIsChatGenerating] = useState(false);
   const [autoTags, setAutoTags] = useState<string[]>([]);
   
+  // Phase 4: PWA & Sharing
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  
   // Text Selection State
   const [selectedText, setSelectedText] = useState("");
   const [selectionToolbarPos, setSelectionToolbarPos] = useState({ top: 0, left: 0 });
@@ -139,6 +143,18 @@ const EditorWorkspace = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Phase 4: Online/Offline detection
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
 
@@ -578,6 +594,36 @@ const EditorWorkspace = () => {
     }
   };
 
+  // Phase 4: Sharing functions
+  const shareNote = async () => {
+    if (!activeNote) return;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: activeNote.title,
+          text: activeNote.content,
+        });
+      } catch (e) {
+        console.log('Share cancelled');
+      }
+    } else {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(`${activeNote.title}\n\n${activeNote.content}`);
+      alert('Note copied to clipboard!');
+    }
+    setShowShareMenu(false);
+  };
+
+  const generateShareLink = () => {
+    if (!activeNote) return;
+    const encoded = btoa(JSON.stringify({ title: activeNote.title, content: activeNote.content }));
+    const url = `${window.location.origin}?share=${encoded}`;
+    navigator.clipboard.writeText(url);
+    alert('Share link copied to clipboard!');
+    setShowShareMenu(false);
+  };
+
   const handleImportMarkdown = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -873,6 +919,32 @@ const EditorWorkspace = () => {
            </div>
 
            <div className="flex items-center gap-3 shrink-0">
+              
+              {/* Online/Offline Status */}
+              <div className="flex items-center gap-2 text-xs">
+                <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`} title={isOnline ? 'Online' : 'Offline'} />
+              </div>
+
+              {/* Share Button */}
+              {activeNote && (
+                <button
+                  onClick={() => setShowShareMenu(!showShareMenu)}
+                  className="p-2 hover:bg-gray-200 dark:hover:bg-[#222] rounded-lg transition-colors text-gray-500 dark:text-gray-400 relative"
+                  title="Share Note"
+                >
+                  <Share2 className="w-4 h-4" />
+                  {showShareMenu && (
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
+                      <button onClick={shareNote} className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
+                        Share via...
+                      </button>
+                      <button onClick={generateShareLink} className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
+                        Copy Share Link
+                      </button>
+                    </div>
+                  )}
+                </button>
+              )}
               
               {/* AI Chat Toggle */}
               <button
