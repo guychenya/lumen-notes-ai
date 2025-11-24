@@ -76,6 +76,11 @@ const EditorWorkspace = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   
+  // Text Selection State
+  const [selectedText, setSelectedText] = useState("");
+  const [selectionToolbarPos, setSelectionToolbarPos] = useState({ top: 0, left: 0 });
+  const [showSelectionToolbar, setShowSelectionToolbar] = useState(false);
+  
   // View Mode & Resizing State
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [splitPos, setSplitPos] = useState(50); // Percentage
@@ -472,6 +477,59 @@ const EditorWorkspace = () => {
     }
   };
 
+  const handleSelectionAI = async (promptPrefix: string, replaceSelection: boolean = false) => {
+    if (!selectedText) return;
+    
+    setIsGenerating(true);
+    setGeneratedText(""); 
+    setShowSelectionToolbar(false);
+
+    const service = new LLMService(config);
+    const fullPrompt = `${promptPrefix} for the following text. Output in Markdown format:\n\n${selectedText}`;
+    const messages: ChatMessage[] = [{ role: 'user', content: fullPrompt }];
+
+    try {
+        let result = "";
+        const generator = service.streamResponse(messages);
+        for await (const token of generator) {
+            result += token;
+            setGeneratedText(prev => prev + token);
+        }
+        
+        if (replaceSelection && textareaRef.current) {
+          const start = textareaRef.current.selectionStart;
+          const end = textareaRef.current.selectionEnd;
+          const newContent = editorContent.substring(0, start) + result + editorContent.substring(end);
+          setEditorContent(newContent);
+          setGeneratedText("");
+        }
+    } catch (e) {
+        setGeneratedText("Error generating response. Please check your AI Settings.");
+    } finally {
+        setIsGenerating(false);
+    }
+  };
+
+  const handleTextSelection = () => {
+    if (!textareaRef.current) return;
+    
+    const start = textareaRef.current.selectionStart;
+    const end = textareaRef.current.selectionEnd;
+    const selected = editorContent.substring(start, end);
+    
+    if (selected.length > 0) {
+      setSelectedText(selected);
+      const rect = textareaRef.current.getBoundingClientRect();
+      setSelectionToolbarPos({
+        top: rect.top - 60,
+        left: rect.left + (rect.width / 2)
+      });
+      setShowSelectionToolbar(true);
+    } else {
+      setShowSelectionToolbar(false);
+    }
+  };
+
   const handleAIInsert = () => {
       insertTextAtCursor(`\n\n${generatedText}\n\n`);
       setGeneratedText("");
@@ -806,6 +864,7 @@ const EditorWorkspace = () => {
                     onChange={(e) => handleContentChange(e.target.value)}
                     onKeyDown={handleKeyDown}
                     onKeyUp={handleKeyUp}
+                    onMouseUp={handleTextSelection}
                     spellCheck={false}
                  />
                </div>
@@ -872,10 +931,111 @@ const EditorWorkspace = () => {
                         </div>
                         <div className="flex gap-2 justify-end pt-2 border-t border-gray-200 dark:border-[#333]">
                             <Button size="sm" variant="ghost" onClick={() => setGeneratedText("")} disabled={isGenerating} className="h-7 text-xs">Discard</Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              onClick={() => {
+                                navigator.clipboard.writeText(generatedText);
+                                alert('Copied to clipboard!');
+                              }} 
+                              disabled={isGenerating} 
+                              className="h-7 text-xs"
+                            >
+                              <Copy className="w-3 h-3 mr-1" /> Copy
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="secondary" 
+                              onClick={() => {
+                                addNote();
+                                setTimeout(() => {
+                                  const newNote = notes[0];
+                                  updateNote(newNote.id, { title: 'AI Generated Note', content: generatedText });
+                                  setActiveNoteId(newNote.id);
+                                  setGeneratedText("");
+                                }, 100);
+                              }} 
+                              disabled={isGenerating} 
+                              className="h-7 text-xs"
+                            >
+                              <Plus className="w-3 h-3 mr-1" /> New Note
+                            </Button>
                             <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 dark:hover:bg-emerald-500 h-7 text-xs" onClick={handleAIInsert} disabled={isGenerating}>Insert</Button>
                         </div>
                     </div>
                  </div>
+              </div>
+           )}
+
+           {/* Text Selection Toolbar */}
+           {showSelectionToolbar && selectedText && (
+              <div 
+                className="fixed z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+                style={{ 
+                  top: `${selectionToolbarPos.top}px`, 
+                  left: `${selectionToolbarPos.left}px`,
+                  transform: 'translateX(-50%)'
+                }}
+              >
+                <div className="bg-gray-900 dark:bg-gray-800 text-white rounded-lg shadow-2xl p-2 flex items-center gap-1 border border-gray-700">
+                  <button
+                    onClick={() => handleSelectionAI("Summarize", false)}
+                    className="px-2 py-1 text-xs hover:bg-gray-700 rounded flex items-center gap-1"
+                    title="Summarize selection"
+                  >
+                    <Sparkles className="w-3 h-3" /> Sum
+                  </button>
+                  <button
+                    onClick={() => handleSelectionAI("Improve grammar and tone", false)}
+                    className="px-2 py-1 text-xs hover:bg-gray-700 rounded flex items-center gap-1"
+                    title="Improve selection"
+                  >
+                    <PenLine className="w-3 h-3" /> Fix
+                  </button>
+                  <button
+                    onClick={() => handleSelectionAI("Explain in simple terms", false)}
+                    className="px-2 py-1 text-xs hover:bg-gray-700 rounded flex items-center gap-1"
+                    title="Explain selection"
+                  >
+                    <Lightbulb className="w-3 h-3" /> Explain
+                  </button>
+                  <button
+                    onClick={() => handleSelectionAI("Expand with more details", false)}
+                    className="px-2 py-1 text-xs hover:bg-gray-700 rounded flex items-center gap-1"
+                    title="Expand selection"
+                  >
+                    <Maximize2 className="w-3 h-3" /> Expand
+                  </button>
+                  <button
+                    onClick={() => handleSelectionAI("Make shorter and concise", false)}
+                    className="px-2 py-1 text-xs hover:bg-gray-700 rounded flex items-center gap-1"
+                    title="Shorten selection"
+                  >
+                    <Minimize2 className="w-3 h-3" /> Short
+                  </button>
+                  <button
+                    onClick={() => handleSelectionAI("Translate to Spanish", false)}
+                    className="px-2 py-1 text-xs hover:bg-gray-700 rounded flex items-center gap-1"
+                    title="Translate selection"
+                  >
+                    <Languages className="w-3 h-3" /> Trans
+                  </button>
+                  <div className="w-px h-4 bg-gray-600 mx-1"></div>
+                  <button
+                    onClick={() => handleSelectionAI("Rewrite this text", true)}
+                    className="px-2 py-1 text-xs hover:bg-emerald-600 rounded flex items-center gap-1"
+                    title="Replace with AI output"
+                  >
+                    <Wand2 className="w-3 h-3" /> Replace
+                  </button>
+                  <button
+                    onClick={() => setShowSelectionToolbar(false)}
+                    className="px-2 py-1 text-xs hover:bg-red-600 rounded"
+                    title="Close"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
            )}
         </div>
