@@ -201,17 +201,17 @@ export const VoiceModeModal: React.FC<Props> = ({ isOpen, onClose, onInsert }) =
     
     // Updated prompt to avoid hallucinating todo lists
     const prompt = `
-      I have recorded the following voice note:
+      Transcribe and format the following voice note into clean Markdown:
       "${textToProcess}"
 
-      Your task is to transcribe and lightly format this text into Markdown.
       Rules:
-      1. Correct basic grammar and spelling mistakes.
-      2. If the user is clearly dictating a structure (like "Heading: Plan"), use Markdown headers (#).
-      3. If the user is listing items, use bullet points (-).
-      4. DO NOT create a checklist or todo list unless the user explicitly says "create a checklist" or "todo".
-      5. If the text is short or conversational, just return it as a clean paragraph.
-      6. Output ONLY the Markdown text.
+      1. Output ONLY the transcribed and formatted text - no explanations, no meta-commentary
+      2. Correct grammar and spelling
+      3. Use Markdown headers (#) if the user mentions headings
+      4. Use bullet points (-) if the user is listing items
+      5. DO NOT add phrases like "To be transcribed later" or "under development"
+      6. If the text is unclear, transcribe it as best as you can
+      7. Keep it concise and natural
     `;
 
     try {
