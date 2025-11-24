@@ -90,6 +90,8 @@ const EditorWorkspace = () => {
   const [showAIChat, setShowAIChat] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
+  const [aiPanelWidth, setAiPanelWidth] = useState(400);
+  const [isResizing, setIsResizing] = useState(false);
   const [isChatGenerating, setIsChatGenerating] = useState(false);
   const [autoTags, setAutoTags] = useState<string[]>([]);
   
@@ -1497,39 +1499,76 @@ const EditorWorkspace = () => {
           </div>
         )}
 
-        {/* AI Chat Panel */}
+        {/* AI Chat Sidebar - Resizable */}
         {showAIChat && (
-          <div className="fixed right-4 bottom-4 w-96 h-[600px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 flex flex-col z-40 animate-in slide-in-from-right duration-300">
-            <div className="p-4 border-b border-gray-200/50 dark:border-gray-700/50 flex items-center justify-between">
-              <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <div 
+            className="fixed right-0 top-0 bottom-0 bg-white dark:bg-[#111111] border-l border-gray-200 dark:border-[#222] flex flex-col z-40 shadow-2xl"
+            style={{ width: `${aiPanelWidth}px` }}
+          >
+            {/* Resize Handle */}
+            <div
+              className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-emerald-500 transition-colors group"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setIsResizing(true);
+                const startX = e.clientX;
+                const startWidth = aiPanelWidth;
+                
+                const handleMouseMove = (e: MouseEvent) => {
+                  const newWidth = startWidth - (e.clientX - startX);
+                  setAiPanelWidth(Math.max(300, Math.min(800, newWidth)));
+                };
+                
+                const handleMouseUp = () => {
+                  setIsResizing(false);
+                  document.removeEventListener('mousemove', handleMouseMove);
+                  document.removeEventListener('mouseup', handleMouseUp);
+                };
+                
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+              }}
+            >
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-12 bg-gray-300 dark:bg-gray-700 group-hover:bg-emerald-500 rounded-full transition-colors" />
+            </div>
+
+            {/* Header */}
+            <div className="h-14 border-b border-gray-200 dark:border-[#222] flex items-center justify-between px-4 shrink-0">
+              <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-purple-500" />
                 AI Assistant
               </h3>
-              <button onClick={() => setShowAIChat(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+              <button 
+                onClick={() => setShowAIChat(false)} 
+                className="p-2 hover:bg-gray-100 dark:hover:bg-[#222] rounded-lg transition-colors"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Chat Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {chatMessages.length === 0 && (
-                <div className="text-center text-gray-500 dark:text-gray-400 text-sm mt-8">
-                  <Sparkles className="w-12 h-12 mx-auto mb-3 text-purple-300 dark:text-purple-700" />
-                  <p>Ask me anything about your notes!</p>
+                <div className="text-center text-gray-500 dark:text-gray-400 text-sm mt-12">
+                  <Sparkles className="w-16 h-16 mx-auto mb-4 text-purple-300 dark:text-purple-700" />
+                  <p className="text-lg font-medium mb-2">AI Assistant</p>
+                  <p className="text-sm">Ask me anything about your notes!</p>
                 </div>
               )}
               {chatMessages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] p-3 rounded-lg ${
+                  <div className={`max-w-[85%] p-3 rounded-2xl ${
                     msg.role === 'user' 
                       ? 'bg-emerald-500 text-white' 
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                      : 'bg-gray-100 dark:bg-[#1A1A1A] text-gray-900 dark:text-white border border-gray-200 dark:border-[#222]'
                   }`}>
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                   </div>
                 </div>
               ))}
               {isChatGenerating && (
                 <div className="flex justify-start">
-                  <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
+                  <div className="bg-gray-100 dark:bg-[#1A1A1A] border border-gray-200 dark:border-[#222] p-3 rounded-2xl">
                     <div className="flex gap-1">
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
@@ -1539,22 +1578,24 @@ const EditorWorkspace = () => {
                 </div>
               )}
             </div>
-            <div className="p-4 border-t border-gray-200/50 dark:border-gray-700/50">
+
+            {/* Input Area */}
+            <div className="p-4 border-t border-gray-200 dark:border-[#222] shrink-0">
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleChatSend()}
-                  placeholder="Ask AI..."
-                  className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                  placeholder="Ask AI about your notes..."
+                  className="flex-1 px-4 py-3 bg-gray-100 dark:bg-[#1A1A1A] border border-gray-200 dark:border-[#222] rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                 />
                 <button
                   onClick={handleChatSend}
                   disabled={isChatGenerating || !chatInput.trim()}
-                  className="px-4 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-lg transition-colors"
+                  className="px-4 py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-xl transition-colors"
                 >
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-5 h-5" />
                 </button>
               </div>
             </div>
