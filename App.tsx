@@ -76,6 +76,11 @@ const EditorWorkspace = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   
+  // Phase 1: Command Palette & Focus Mode
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [commandQuery, setCommandQuery] = useState("");
+  const [focusMode, setFocusMode] = useState(false);
+  
   // Text Selection State
   const [selectedText, setSelectedText] = useState("");
   const [selectionToolbarPos, setSelectionToolbarPos] = useState({ top: 0, left: 0 });
@@ -107,6 +112,22 @@ const EditorWorkspace = () => {
         renameTriggered.current = null;
     }
   }, [activeNoteId]);
+
+  // Command Palette keyboard shortcut (Cmd+K / Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowCommandPalette(true);
+      }
+      if (e.key === 'Escape') {
+        setShowCommandPalette(false);
+        setFocusMode(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
 
   // --- HTML/MD State Sync & Editor Filtering ---
@@ -570,7 +591,7 @@ const EditorWorkspace = () => {
     <div className="flex min-h-screen bg-white dark:bg-[#0F0F0F] text-gray-800 dark:text-gray-100 font-sans overflow-hidden">
       
       {/* Sidebar */}
-      {isSidebarOpen && (
+      {isSidebarOpen && !focusMode && (
       <div className="w-64 bg-gray-50 dark:bg-[#111111] border-r border-gray-200 dark:border-[#222] flex flex-col min-w-[250px] shrink-0 print:hidden z-20">
         <div className="p-4 border-b border-gray-200 dark:border-[#222]">
           <div className="flex items-center gap-2 text-emerald-500 font-bold text-xl tracking-tight mb-3">
@@ -682,6 +703,7 @@ const EditorWorkspace = () => {
       <div className="flex-1 flex flex-col min-w-0 relative h-screen">
         
         {/* Header */}
+        {!focusMode && (
         <header className="h-14 border-b border-gray-200 dark:border-[#222] bg-gray-50 dark:bg-[#111111] flex items-center justify-between px-4 shrink-0 print:hidden z-20">
            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 w-full mr-4">
              <button
@@ -715,6 +737,24 @@ const EditorWorkspace = () => {
            </div>
 
            <div className="flex items-center gap-3 shrink-0">
+              
+              {/* Focus Mode Toggle */}
+              <button
+                onClick={() => setFocusMode(!focusMode)}
+                className={`p-2 rounded-lg transition-all ${focusMode ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'hover:bg-gray-200 dark:hover:bg-[#222] text-gray-500 dark:text-gray-400'}`}
+                title="Focus Mode (Esc to exit)"
+              >
+                <Eye className="w-4 h-4" />
+              </button>
+
+              {/* Command Palette Button */}
+              <button
+                onClick={() => setShowCommandPalette(true)}
+                className="p-2 hover:bg-gray-200 dark:hover:bg-[#222] rounded-lg transition-colors text-gray-500 dark:text-gray-400"
+                title="Command Palette (⌘K)"
+              >
+                <Search className="w-4 h-4" />
+              </button>
               
               {/* View Mode Toggle */}
               <div className="flex bg-gray-200 dark:bg-[#1A1A1A] rounded-lg p-1 border border-gray-300 dark:border-[#333]">
@@ -806,8 +846,10 @@ const EditorWorkspace = () => {
               </div>
            </div>
         </header>
+        )}
 
         {/* Toolbar */}
+        {!focusMode && (
         <div className="h-12 border-b border-gray-200 dark:border-[#222] bg-gray-100 dark:bg-[#161616] flex items-center px-6 gap-2 overflow-x-auto no-scrollbar shrink-0 print:hidden z-10">
             <div className="flex items-center gap-2 whitespace-nowrap flex-1">
                 <span className="text-xs font-medium text-emerald-600 dark:text-emerald-500 uppercase tracking-wider ml-2 mr-1">AI Tools</span>
@@ -847,6 +889,7 @@ const EditorWorkspace = () => {
                 </Button>
             </div>
         </div>
+        )}
 
         {/* Split Editor Area */}
         <div ref={containerRef} className="flex-1 flex overflow-hidden relative print:block print:overflow-visible print:h-auto">
@@ -1066,6 +1109,67 @@ const EditorWorkspace = () => {
             onSelect={executeSlashCommand}
             onClose={() => setSlashMenuOpen(false)}
         />
+
+        {/* Command Palette */}
+        {showCommandPalette && (
+          <div className="fixed inset-0 z-50 flex items-start justify-center pt-32 px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-2xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+              <div className="p-4 border-b border-gray-200/50 dark:border-gray-700/50">
+                <div className="flex items-center gap-3">
+                  <Search className="w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Type a command or search..."
+                    value={commandQuery}
+                    onChange={(e) => setCommandQuery(e.target.value)}
+                    className="flex-1 bg-transparent text-lg focus:outline-none text-gray-900 dark:text-white placeholder-gray-400"
+                    autoFocus
+                  />
+                  <kbd className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-600">ESC</kbd>
+                </div>
+              </div>
+              <div className="max-h-96 overflow-y-auto p-2">
+                <div className="space-y-1">
+                  <button onClick={() => { addNote(); setShowCommandPalette(false); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-left">
+                    <Plus className="w-4 h-4 text-emerald-500" />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900 dark:text-white">New Note</div>
+                      <div className="text-xs text-gray-500">Create a new note</div>
+                    </div>
+                  </button>
+                  <button onClick={() => { setFocusMode(!focusMode); setShowCommandPalette(false); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-left">
+                    <Eye className="w-4 h-4 text-purple-500" />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900 dark:text-white">Toggle Focus Mode</div>
+                      <div className="text-xs text-gray-500">Distraction-free writing</div>
+                    </div>
+                  </button>
+                  <button onClick={() => { setIsVoiceModeOpen(true); setShowCommandPalette(false); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-left">
+                    <Mic className="w-4 h-4 text-purple-500" />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900 dark:text-white">Voice Mode</div>
+                      <div className="text-xs text-gray-500">Dictate your notes</div>
+                    </div>
+                  </button>
+                  <button onClick={() => { setSettingsOpen(true); setShowCommandPalette(false); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-left">
+                    <Settings className="w-4 h-4 text-gray-500" />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900 dark:text-white">AI Settings</div>
+                      <div className="text-xs text-gray-500">Configure AI providers</div>
+                    </div>
+                  </button>
+                  <button onClick={() => { toggleTheme(); setShowCommandPalette(false); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-left">
+                    {theme === 'dark' ? <Sun className="w-4 h-4 text-yellow-500" /> : <Moon className="w-4 h-4 text-indigo-500" />}
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900 dark:text-white">Toggle Theme</div>
+                      <div className="text-xs text-gray-500">Switch between light and dark</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       
       {isMenuOpen && (
