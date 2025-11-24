@@ -81,6 +81,11 @@ const EditorWorkspace = () => {
   const [commandQuery, setCommandQuery] = useState("");
   const [focusMode, setFocusMode] = useState(false);
   
+  // Phase 2: Templates & Quick Capture
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showQuickCapture, setShowQuickCapture] = useState(false);
+  const [quickCaptureText, setQuickCaptureText] = useState("");
+  
   // Text Selection State
   const [selectedText, setSelectedText] = useState("");
   const [selectionToolbarPos, setSelectionToolbarPos] = useState({ top: 0, left: 0 });
@@ -449,6 +454,64 @@ const EditorWorkspace = () => {
           reader.readAsDataURL(file);
       }
       e.target.value = '';
+  };
+
+  // Phase 2: Templates & Daily Note
+  const templates = {
+    meeting: {
+      title: 'Meeting Notes',
+      content: `# Meeting Notes\n\n**Date:** ${new Date().toLocaleDateString()}\n**Attendees:** \n\n## Agenda\n- \n\n## Discussion\n\n## Action Items\n- [ ] \n\n## Next Steps\n`
+    },
+    journal: {
+      title: 'Daily Journal',
+      content: `# Daily Journal - ${new Date().toLocaleDateString()}\n\n## Morning Thoughts\n\n## What I'm Grateful For\n1. \n2. \n3. \n\n## Today's Goals\n- [ ] \n\n## Evening Reflection\n`
+    },
+    todo: {
+      title: 'To-Do List',
+      content: `# To-Do List\n\n## High Priority\n- [ ] \n\n## Medium Priority\n- [ ] \n\n## Low Priority\n- [ ] \n\n## Completed\n`
+    },
+    project: {
+      title: 'Project Plan',
+      content: `# Project Plan\n\n## Overview\n\n## Goals\n1. \n\n## Timeline\n\n## Resources Needed\n\n## Milestones\n- [ ] \n\n## Notes\n`
+    },
+    blog: {
+      title: 'Blog Post',
+      content: `# Blog Post Title\n\n## Introduction\n\n## Main Content\n\n### Section 1\n\n### Section 2\n\n## Conclusion\n\n---\n*Tags:* \n*Published:* ${new Date().toLocaleDateString()}`
+    }
+  };
+
+  const createFromTemplate = (templateKey: keyof typeof templates) => {
+    const template = templates[templateKey];
+    addNote();
+    setTimeout(() => {
+      const newNote = notes[0];
+      updateNote(newNote.id, { title: template.title, content: template.content });
+      setActiveNoteId(newNote.id);
+    }, 100);
+    setShowTemplates(false);
+  };
+
+  const createDailyNote = () => {
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const content = `# ${today}\n\n## Morning\n\n## Afternoon\n\n## Evening\n\n## Notes\n`;
+    addNote();
+    setTimeout(() => {
+      const newNote = notes[0];
+      updateNote(newNote.id, { title: `Daily Note - ${new Date().toLocaleDateString()}`, content });
+      setActiveNoteId(newNote.id);
+    }, 100);
+  };
+
+  const handleQuickCapture = () => {
+    if (!quickCaptureText.trim()) return;
+    addNote();
+    setTimeout(() => {
+      const newNote = notes[0];
+      updateNote(newNote.id, { title: 'Quick Capture', content: quickCaptureText });
+      setActiveNoteId(newNote.id);
+      setQuickCaptureText("");
+      setShowQuickCapture(false);
+    }, 100);
   };
 
   const handleImportMarkdown = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1137,6 +1200,27 @@ const EditorWorkspace = () => {
                       <div className="text-xs text-gray-500">Create a new note</div>
                     </div>
                   </button>
+                  <button onClick={() => { createDailyNote(); setShowCommandPalette(false); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-left">
+                    <FileText className="w-4 h-4 text-blue-500" />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900 dark:text-white">Daily Note</div>
+                      <div className="text-xs text-gray-500">Create today's note</div>
+                    </div>
+                  </button>
+                  <button onClick={() => { setShowTemplates(true); setShowCommandPalette(false); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-left">
+                    <FileCode className="w-4 h-4 text-indigo-500" />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900 dark:text-white">Templates</div>
+                      <div className="text-xs text-gray-500">Start from a template</div>
+                    </div>
+                  </button>
+                  <button onClick={() => { setShowQuickCapture(true); setShowCommandPalette(false); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-left">
+                    <Zap className="w-4 h-4 text-yellow-500" />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900 dark:text-white">Quick Capture</div>
+                      <div className="text-xs text-gray-500">Capture a quick thought</div>
+                    </div>
+                  </button>
                   <button onClick={() => { setFocusMode(!focusMode); setShowCommandPalette(false); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-left">
                     <Eye className="w-4 h-4 text-purple-500" />
                     <div className="flex-1">
@@ -1165,6 +1249,83 @@ const EditorWorkspace = () => {
                       <div className="text-xs text-gray-500">Switch between light and dark</div>
                     </div>
                   </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Templates Modal */}
+        {showTemplates && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-3xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+              <div className="p-6 border-b border-gray-200/50 dark:border-gray-700/50">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Choose a Template</h2>
+                  <button onClick={() => setShowTemplates(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+              <div className="p-6 grid grid-cols-2 gap-4">
+                <button onClick={() => createFromTemplate('meeting')} className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl hover:shadow-lg transition-all border border-blue-200 dark:border-blue-700 text-left">
+                  <FileText className="w-8 h-8 text-blue-600 dark:text-blue-400 mb-3" />
+                  <h3 className="font-bold text-gray-900 dark:text-white mb-1">Meeting Notes</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Agenda, discussion, action items</p>
+                </button>
+                <button onClick={() => createFromTemplate('journal')} className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl hover:shadow-lg transition-all border border-purple-200 dark:border-purple-700 text-left">
+                  <FileText className="w-8 h-8 text-purple-600 dark:text-purple-400 mb-3" />
+                  <h3 className="font-bold text-gray-900 dark:text-white mb-1">Daily Journal</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Gratitude, goals, reflection</p>
+                </button>
+                <button onClick={() => createFromTemplate('todo')} className="p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl hover:shadow-lg transition-all border border-green-200 dark:border-green-700 text-left">
+                  <CheckSquare className="w-8 h-8 text-green-600 dark:text-green-400 mb-3" />
+                  <h3 className="font-bold text-gray-900 dark:text-white mb-1">To-Do List</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Prioritized task management</p>
+                </button>
+                <button onClick={() => createFromTemplate('project')} className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl hover:shadow-lg transition-all border border-orange-200 dark:border-orange-700 text-left">
+                  <Folder className="w-8 h-8 text-orange-600 dark:text-orange-400 mb-3" />
+                  <h3 className="font-bold text-gray-900 dark:text-white mb-1">Project Plan</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Goals, timeline, milestones</p>
+                </button>
+                <button onClick={() => createFromTemplate('blog')} className="p-6 bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 rounded-xl hover:shadow-lg transition-all border border-pink-200 dark:border-pink-700 text-left">
+                  <PenLine className="w-8 h-8 text-pink-600 dark:text-pink-400 mb-3" />
+                  <h3 className="font-bold text-gray-900 dark:text-white mb-1">Blog Post</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Structured article format</p>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Quick Capture Widget */}
+        {showQuickCapture && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-lg bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+              <div className="p-6 border-b border-gray-200/50 dark:border-gray-700/50">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-yellow-500" />
+                    Quick Capture
+                  </h2>
+                  <button onClick={() => setShowQuickCapture(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+              <div className="p-6">
+                <textarea
+                  value={quickCaptureText}
+                  onChange={(e) => setQuickCaptureText(e.target.value)}
+                  placeholder="Type your quick thought..."
+                  className="w-full h-32 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                  autoFocus
+                />
+                <div className="flex gap-3 mt-4">
+                  <Button onClick={() => setShowQuickCapture(false)} variant="ghost" className="flex-1">Cancel</Button>
+                  <Button onClick={handleQuickCapture} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
+                    <Plus className="w-4 h-4 mr-2" /> Create Note
+                  </Button>
                 </div>
               </div>
             </div>
