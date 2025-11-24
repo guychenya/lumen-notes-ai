@@ -73,9 +73,10 @@ export const VoiceModeModal: React.FC<Props> = ({ isOpen, onClose, onInsert }) =
     }
 
     const recognition = new SpeechRecognition();
-    recognition.continuous = false; 
+    recognition.continuous = true; 
     recognition.interimResults = true; 
     recognition.lang = 'en-US';
+    recognition.maxAlternatives = 1;
     return recognition;
   };
 
@@ -137,10 +138,16 @@ export const VoiceModeModal: React.FC<Props> = ({ isOpen, onClose, onInsert }) =
       };
 
       recognition.onend = () => {
-        if (shouldBeRecording.current && stage !== 'error') {
-            try {
-                recognition.start();
-            } catch (e) {}
+        if (shouldBeRecording.current && stage !== 'error' && stage !== 'processing') {
+            setTimeout(() => {
+              if (shouldBeRecording.current) {
+                try {
+                    recognition.start();
+                } catch (e) {
+                  console.warn('Could not restart recognition:', e);
+                }
+              }
+            }, 100);
         }
       };
 
