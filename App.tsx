@@ -1478,8 +1478,14 @@ const EditorWorkspace = () => {
         {/* AI Chat Sidebar - Resizable */}
         {showAIChat && (
           <div 
-            className="fixed right-0 top-0 bottom-0 bg-white dark:bg-[#111111] border-l border-gray-200 dark:border-[#222] flex flex-col z-40 shadow-2xl"
-            style={{ width: `${aiPanelWidth}px` }}
+            className="fixed right-0 top-0 bottom-0 bg-gray-50 dark:bg-[#0F0F0F] border-l border-gray-200 dark:border-[#222] flex flex-col z-40 shadow-2xl"
+            style={{ 
+              width: `${aiPanelWidth}px`,
+              backgroundImage: theme === 'dark' 
+                ? 'radial-gradient(#333 1px, transparent 1px)' 
+                : 'radial-gradient(#E5E7EB 1px, transparent 1px)',
+              backgroundSize: '20px 20px'
+            }}
           >
             {/* Resize Handle */}
             <div
