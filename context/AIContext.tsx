@@ -14,10 +14,10 @@ interface AIContextType {
 }
 
 const DEFAULT_AI_CONFIG: AIConfig = {
-  provider: 'ollama',
-  baseUrl: 'http://localhost:11434',
-  modelName: 'llama3',
-  apiKey: '',
+  provider: 'gemini',
+  baseUrl: 'https://generativelanguage.googleapis.com',
+  modelName: 'gemini-pro',
+  apiKey: (process.env.GEMINI_API_KEY as string) || '',
 };
 
 const AIContext = createContext<AIContextType | undefined>(undefined);
