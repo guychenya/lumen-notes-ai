@@ -654,55 +654,82 @@ const EditorWorkspace = () => {
   const handleAIAction = async (promptPrefix: string) => {
     if (!editorContent) return;
     
-    setIsGenerating(true);
-    setGeneratedText(""); 
+    // Open AI chat sidebar if not already open
+    if (!showAIChat) setShowAIChat(true);
+    
+    // Add user message to chat
+    const userMessage: ChatMessage = { role: 'user', content: `${promptPrefix}:\n\n${editorContent.substring(0, 500)}${editorContent.length > 500 ? '...' : ''}` };
+    setChatMessages(prev => [...prev, userMessage]);
+    setIsChatGenerating(true);
 
     const service = new LLMService(config);
     const fullPrompt = `${promptPrefix} for the following text. Output in Markdown format:\n\n${editorContent}`;
     const messages: ChatMessage[] = [{ role: 'user', content: fullPrompt }];
 
     try {
+        let response = "";
         const generator = service.streamResponse(messages);
+        
+        setChatMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+        
         for await (const token of generator) {
-            setGeneratedText(prev => prev + token);
+          response += token;
+          setChatMessages(prev => {
+            const newMessages = [...prev];
+            newMessages[newMessages.length - 1].content = response;
+            return newMessages;
+          });
         }
     } catch (e) {
-        setGeneratedText("Error generating response. Please check your AI Settings.");
+        setChatMessages(prev => {
+          const newMessages = [...prev];
+          newMessages[newMessages.length - 1].content = "Error generating response. Please check your AI Settings.";
+          return newMessages;
+        });
     } finally {
-        setIsGenerating(false);
+        setIsChatGenerating(false);
     }
   };
 
   const handleSelectionAI = async (promptPrefix: string, replaceSelection: boolean = false) => {
     if (!selectedText) return;
     
-    setIsGenerating(true);
-    setGeneratedText(""); 
+    // Open AI chat sidebar if not already open
+    if (!showAIChat) setShowAIChat(true);
+    
     setShowSelectionToolbar(false);
+    
+    // Add user message to chat
+    const userMessage: ChatMessage = { role: 'user', content: `${promptPrefix}:\n\n${selectedText}` };
+    setChatMessages(prev => [...prev, userMessage]);
+    setIsChatGenerating(true);
 
     const service = new LLMService(config);
     const fullPrompt = `${promptPrefix} for the following text. Output in Markdown format:\n\n${selectedText}`;
     const messages: ChatMessage[] = [{ role: 'user', content: fullPrompt }];
 
     try {
-        let result = "";
+        let response = "";
         const generator = service.streamResponse(messages);
-        for await (const token of generator) {
-            result += token;
-            setGeneratedText(prev => prev + token);
-        }
         
-        if (replaceSelection && textareaRef.current) {
-          const start = textareaRef.current.selectionStart;
-          const end = textareaRef.current.selectionEnd;
-          const newContent = editorContent.substring(0, start) + result + editorContent.substring(end);
-          setEditorContent(newContent);
-          setGeneratedText("");
+        setChatMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+        
+        for await (const token of generator) {
+          response += token;
+          setChatMessages(prev => {
+            const newMessages = [...prev];
+            newMessages[newMessages.length - 1].content = response;
+            return newMessages;
+          });
         }
     } catch (e) {
-        setGeneratedText("Error generating response. Please check your AI Settings.");
+        setChatMessages(prev => {
+          const newMessages = [...prev];
+          newMessages[newMessages.length - 1].content = "Error generating response. Please check your AI Settings.";
+          return newMessages;
+        });
     } finally {
-        setIsGenerating(false);
+        setIsChatGenerating(false);
     }
   };
 
@@ -1194,55 +1221,7 @@ const EditorWorkspace = () => {
                 onChange={handleImportMarkdown}
            />
 
-           {/* AI Output Overlay */}
-           { (isGenerating || generatedText) && (
-              <div className="absolute bottom-6 right-6 w-96 z-50 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                 <div className="p-1 rounded-xl bg-gradient-to-r from-emerald-500/20 to-blue-500/20 backdrop-blur-md border border-gray-200 dark:border-[#333] shadow-2xl">
-                    <div className="bg-white/80 dark:bg-[#161616] rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-3 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
-                            <Sparkles className="w-3 h-3" /> AI Analysis
-                        </div>
-                        <div className="max-h-60 overflow-y-auto text-sm text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap mb-3 custom-scrollbar">
-                            {generatedText}
-                            {isGenerating && <span className="inline-block w-1 h-3 bg-emerald-500 ml-1 animate-pulse"/>}
-                        </div>
-                        <div className="flex gap-2 justify-end pt-2 border-t border-gray-200 dark:border-[#333]">
-                            <Button size="sm" variant="ghost" onClick={() => setGeneratedText("")} disabled={isGenerating} className="h-7 text-xs">Discard</Button>
-                            <Button 
-                              size="sm" 
-                              variant="ghost" 
-                              onClick={() => {
-                                navigator.clipboard.writeText(generatedText);
-                                alert('Copied to clipboard!');
-                              }} 
-                              disabled={isGenerating} 
-                              className="h-7 text-xs"
-                            >
-                              <Copy className="w-3 h-3 mr-1" /> Copy
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="secondary" 
-                              onClick={() => {
-                                addNote();
-                                setTimeout(() => {
-                                  const newNote = notes[0];
-                                  updateNote(newNote.id, { title: 'AI Generated Note', content: generatedText });
-                                  setActiveNoteId(newNote.id);
-                                  setGeneratedText("");
-                                }, 100);
-                              }} 
-                              disabled={isGenerating} 
-                              className="h-7 text-xs"
-                            >
-                              <Plus className="w-3 h-3 mr-1" /> New Note
-                            </Button>
-                            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 dark:hover:bg-emerald-500 h-7 text-xs" onClick={handleAIInsert} disabled={isGenerating}>Insert</Button>
-                        </div>
-                    </div>
-                 </div>
-              </div>
-           )}
+
 
            {/* Text Selection Toolbar */}
            {showSelectionToolbar && selectedText && (
