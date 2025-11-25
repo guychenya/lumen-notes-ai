@@ -21,7 +21,7 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({ notes, onSelectN
       note.title.toLowerCase().includes(query.toLowerCase()) ||
       note.content.toLowerCase().includes(query.toLowerCase());
     
-    const matchesFavorite = !filterFavorites || note.isFavorite;
+    const matchesFavorite = !filterFavorites || note.isFavorite === true;
     const matchesTag = !filterTag || note.tags?.includes(filterTag);
     
     let matchesDate = true;

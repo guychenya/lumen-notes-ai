@@ -1456,7 +1456,7 @@ const EditorWorkspace = () => {
         />
         {showEnhancedSearch && (
           <EnhancedSearch
-            notes={notes}
+            notes={notes.map(note => ({ ...note, isFavorite: favorites.has(note.id) }))}
             onSelectNote={setActiveNoteId}
             onClose={() => setShowEnhancedSearch(false)}
           />

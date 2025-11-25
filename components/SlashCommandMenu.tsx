@@ -111,24 +111,21 @@ export const SlashCommandMenu: React.FC<Props> = ({ isOpen, position, commands, 
     origin = 'bottom';
   }
 
-  const menuStyle: React.CSSProperties = {
-    top: `${top}px`,
-    left: `${left}px`,
-    maxHeight: `${MENU_HEIGHT}px`,
-    transformOrigin: origin === 'bottom' ? 'bottom left' : 'top left'
-  };
-
   return (
     <div 
       ref={menuRef}
-      className="fixed z-[99999] w-[300px] bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-[#333] rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100"
-      style={menuStyle}
+      className="fixed z-[99999] w-[300px] bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-[#333] rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-100"
+      style={{
+        top: `${top}px`,
+        left: `${left}px`,
+        transformOrigin: origin === 'bottom' ? 'bottom left' : 'top left'
+      }}
     >
       <div className="px-3 py-2 border-b border-gray-200 dark:border-[#2A2A2A] bg-gray-50 dark:bg-[#161616] text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wider flex justify-between items-center">
         <span>Insert Block</span>
         <span className="text-[10px] bg-gray-200 dark:bg-[#222] px-1.5 rounded border border-gray-300 dark:border-[#333]">ESC to close</span>
       </div>
-      <div className="overflow-y-auto flex-1 p-1 custom-scrollbar">
+      <div className="overflow-y-auto p-1 max-h-[280px]">
         {commands.map((cmd, index) => (
           <button
             key={cmd.id}
