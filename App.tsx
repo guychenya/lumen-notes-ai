@@ -1564,6 +1564,15 @@ Results-driven professional with [X] years of experience in [industry/field]. Pr
                 <Eye className="w-4 h-4" />
               </button>
 
+              {/* Templates Button */}
+              <button
+                onClick={() => setShowTemplates(true)}
+                className="p-2 hover:bg-gray-200 dark:hover:bg-[#222] rounded-lg transition-colors text-gray-500 dark:text-gray-400"
+                title="Templates (⌘K)"
+              >
+                <FileText className="w-4 h-4" />
+              </button>
+
               {/* Command Palette Button */}
               <button
                 onClick={() => setShowCommandPalette(true)}
