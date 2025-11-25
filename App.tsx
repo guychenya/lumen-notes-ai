@@ -1716,7 +1716,7 @@ const EditorWorkspace = () => {
               )}
               {chatMessages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] ${
+                  <div className={`${msg.role === 'user' ? 'max-w-[85%]' : 'min-w-[300px] max-w-[90%]'} ${
                     msg.role === 'user' 
                       ? 'bg-emerald-500 text-white p-3 rounded-2xl' 
                       : 'bg-gray-100 dark:bg-[#1A1A1A] text-gray-900 dark:text-white border border-gray-200 dark:border-[#222] rounded-2xl overflow-hidden'
@@ -1732,7 +1732,7 @@ const EditorWorkspace = () => {
                       <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                     </div>
                     {msg.role === 'assistant' && msg.content && !isChatGenerating && (
-                      <div className="flex gap-2 justify-end px-3 pb-3 pt-2 border-t border-gray-200 dark:border-[#333]">
+                      <div className="flex flex-wrap gap-2 justify-end px-3 pb-3 pt-2 border-t border-gray-200 dark:border-[#333]">
                         <Button 
                           size="sm" 
                           variant="ghost" 
