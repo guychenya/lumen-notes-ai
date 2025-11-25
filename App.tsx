@@ -439,29 +439,36 @@ const EditorWorkspace = () => {
   };
 
   const executeSlashCommand = (command: SlashCommand) => {
-    if (!textareaRef.current || !activeNote) return;
+    if (!textareaRef.current || !activeNote) {
+      console.log('No textarea or active note');
+      return;
+    }
     
     const textarea = textareaRef.current;
     const cursorPos = textarea.selectionStart;
     const content = activeNote.content;
 
+    console.log('Execute command:', command.id, 'Cursor:', cursorPos, 'Content length:', content.length);
+
     // Find the slash position
     const slashPos = content.lastIndexOf('/', cursorPos);
     
     if (slashPos === -1) {
+      console.log('No slash found');
       setSlashMenuOpen(false);
       return;
     }
 
-    // Remove the slash and get the text to insert based on command
+    console.log('Slash at position:', slashPos);
+
+    // Remove the slash
     const beforeSlash = content.substring(0, slashPos);
     const afterSlash = content.substring(cursorPos);
     
-    // Get the text to insert from the command
+    // Get the text to insert
     let textToInsert = '';
-    const commandId = command.id;
     
-    switch(commandId) {
+    switch(command.id) {
       case 'h1': textToInsert = '# '; break;
       case 'h2': textToInsert = '## '; break;
       case 'h3': textToInsert = '### '; break;
@@ -474,34 +481,24 @@ const EditorWorkspace = () => {
       case 'code': textToInsert = '\n```\ncode here\n```\n'; break;
       case 'divider': textToInsert = '\n---\n'; break;
       case 'image-upload':
-        // Remove slash first
         updateNote(activeNote.id, { content: beforeSlash + afterSlash });
         setSlashMenuOpen(false);
-        setTimeout(() => {
-          if (textareaRef.current) {
-            textareaRef.current.setSelectionRange(slashPos, slashPos);
-            imageFileInputRef.current?.click();
-          }
-        }, 0);
+        setTimeout(() => imageFileInputRef.current?.click(), 100);
         return;
       case 'image-url':
-        setSlashMenuOpen(false);
         const url = prompt("Enter Image URL:");
         if(url) {
           const newContent = beforeSlash + `![Image](${url})` + afterSlash;
           updateNote(activeNote.id, { content: newContent });
-          setTimeout(() => {
-            if (textareaRef.current) {
-              textareaRef.current.focus();
-              textareaRef.current.setSelectionRange(slashPos + `![Image](${url})`.length, slashPos + `![Image](${url})`.length);
-            }
-          }, 0);
         }
+        setSlashMenuOpen(false);
         return;
       case 'video':
-        setSlashMenuOpen(false);
         const videoUrl = prompt("Enter Video URL (YouTube or MP4):");
-        if (!videoUrl) return;
+        if (!videoUrl) {
+          setSlashMenuOpen(false);
+          return;
+        }
         
         let videoId = '';
         if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
@@ -521,33 +518,35 @@ const EditorWorkspace = () => {
           videoBlock = `\n<div class="aspect-video my-6 rounded-xl overflow-hidden border border-gray-200 dark:border-[#333] shadow-lg"><video src="${videoUrl}" controls class="w-full h-full"></video></div>\n`;
         }
         
-        const videoContent = beforeSlash + videoBlock + afterSlash;
-        updateNote(activeNote.id, { content: videoContent });
-        setTimeout(() => {
-          if (textareaRef.current) {
-            textareaRef.current.focus();
-            textareaRef.current.setSelectionRange(slashPos + videoBlock.length, slashPos + videoBlock.length);
-          }
-        }, 0);
+        updateNote(activeNote.id, { content: beforeSlash + videoBlock + afterSlash });
+        setSlashMenuOpen(false);
         return;
-      default: textToInsert = '';
+      default: 
+        console.log('Unknown command:', command.id);
+        textToInsert = '';
     }
     
-    // Insert the text
+    console.log('Inserting text:', textToInsert);
+    
+    // Build new content
     const newContent = beforeSlash + textToInsert + afterSlash;
     const newCursorPos = slashPos + textToInsert.length;
     
+    console.log('New content length:', newContent.length, 'New cursor:', newCursorPos);
+    
+    // Update note
     updateNote(activeNote.id, { content: newContent });
     
     setSlashMenuOpen(false);
     
-    // Set cursor position
+    // Set cursor position after React updates
     setTimeout(() => {
       if (textareaRef.current) {
         textareaRef.current.focus();
         textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+        console.log('Cursor set to:', newCursorPos);
       }
-    }, 0);
+    }, 50);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
