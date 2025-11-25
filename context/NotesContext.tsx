@@ -18,7 +18,7 @@ interface NotesContextType {
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
 
 export const NotesProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [notes, setNotes] = useLocalStorage<Note[]>('lumen-notes', []);
+  const [notes, setNotes] = useLocalStorage<Note[]>('notara-notes', []);
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
 
   // Initialize with a welcome note if empty, or select the first note on load.

@@ -13,7 +13,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // FIX: The useLocalStorage hook expects a value, not a function for lazy initialization.
   // The function wrapper has been removed to pass the result of the media query directly.
-  const [theme, setTheme] = useLocalStorage<Theme>('lumen-theme', 
+  const [theme, setTheme] = useLocalStorage<Theme>('notara-theme', 
     // Default to system preference
     window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   );

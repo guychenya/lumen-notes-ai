@@ -90,7 +90,7 @@ All notable changes to Notara will be documented in this file.
 
 ### Infrastructure
 - Created Dockerfile for containerized deployment
-- Set up GitHub repository: guychenya/lumen-notes-ai (now private)
+- Set up GitHub repository: guychenya/notara
 - Configured environment variables for API keys
 - Implemented rolling updates for zero-downtime deployments
 

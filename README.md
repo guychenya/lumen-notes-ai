@@ -64,8 +64,8 @@ Notara is an intelligent note-taking application that combines the simplicity of
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/guychenya/lumen-notes-ai.git
-   cd lumen-notes-ai
+   git clone https://github.com/guychenya/notara.git
+   cd notara
    ```
 
 2. **Install dependencies:**
@@ -190,6 +190,6 @@ Built with ❤️ using React, TypeScript, and Google Gemini AI.
 
 <div align="center">
 
-**[Live Demo](https://notara.reliatrack.org)** • **[Report Bug](https://github.com/guychenya/lumen-notes-ai/issues)** • **[Request Feature](https://github.com/guychenya/lumen-notes-ai/issues)**
+**[Live Demo](https://notara.reliatrack.org)** • **[Report Bug](https://github.com/guychenya/notara/issues)** • **[Request Feature](https://github.com/guychenya/notara/issues)**
 
 </div>

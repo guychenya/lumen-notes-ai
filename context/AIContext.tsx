@@ -23,8 +23,8 @@ const DEFAULT_AI_CONFIG: AIConfig = {
 const AIContext = createContext<AIContextType | undefined>(undefined);
 
 export const AIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [config, setConfig] = useLocalStorage<AIConfig>('lumen-ai-config', DEFAULT_AI_CONFIG);
-  const [isSettingsOpen, setSettingsOpen] = useLocalStorage<boolean>('lumen-ai-modal-open', false);
+  const [config, setConfig] = useLocalStorage<AIConfig>('notara-ai-config', DEFAULT_AI_CONFIG);
+  const [isSettingsOpen, setSettingsOpen] = useLocalStorage<boolean>('notara-ai-modal-open', false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('checking');
 
   const checkConnection = async () => {

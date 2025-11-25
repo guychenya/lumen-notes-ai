@@ -6,8 +6,8 @@ Thank you for your interest in contributing to Notara! We welcome contributions 
 
 1. **Fork the repository**
    ```bash
-   git clone https://github.com/guychenya/lumen-notes-ai.git
-   cd lumen-notes-ai
+   git clone https://github.com/guychenya/notara.git
+   cd notara
    ```
 
 2. **Install dependencies**

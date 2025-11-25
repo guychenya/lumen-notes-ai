@@ -581,7 +581,7 @@ const EditorWorkspace = () => {
     if (!activeNote?.content) return;
     
     const service = new LLMService(config);
-    const prompt = `Analyze this note and suggest 3-5 relevant tags (single words or short phrases). Output only the tags separated by commas:\n\n${activeNote.content}`;
+    const prompt = `Analyze this note and suggest 3-5 relevant tags (single words or short phrases). Output ONLY the tags separated by commas, nothing else:\n\n${activeNote.content}`;
     
     try {
       let result = "";
@@ -589,11 +589,32 @@ const EditorWorkspace = () => {
       for await (const token of generator) {
         result += token;
       }
-      const tags = result.split(',').map(t => t.trim()).filter(t => t.length > 0).slice(0, 5);
+      // Clean up the result - remove any extra text, quotes, or formatting
+      const cleaned = result
+        .replace(/^(tags?:|here are|suggested tags?:)/gi, '')
+        .replace(/["\[\]]/g, '')
+        .trim();
+      const tags = cleaned
+        .split(/[,\n]/)
+        .map(t => t.trim())
+        .filter(t => t.length > 0 && t.length < 30)
+        .slice(0, 5);
       setAutoTags(tags);
     } catch (e) {
       console.error('Auto-tag error:', e);
     }
+  };
+
+  // Tag color palette
+  const getTagColor = (index: number) => {
+    const colors = [
+      'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+      'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
+      'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400',
+      'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400',
+      'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400',
+    ];
+    return colors[index % colors.length];
   };
 
   // Phase 4: Sharing functions
@@ -932,9 +953,9 @@ const EditorWorkspace = () => {
                     {new Date(activeNote.updatedAt).toLocaleDateString()}
                   </span>
                   {autoTags.length > 0 && (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 flex-wrap">
                       {autoTags.map((tag, i) => (
-                        <span key={i} className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full text-xs">
+                        <span key={i} className={`px-2 py-0.5 rounded-full text-xs font-medium ${getTagColor(i)}`}>
                           {tag}
                         </span>
                       ))}

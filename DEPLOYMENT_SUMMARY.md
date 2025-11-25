@@ -4,7 +4,7 @@
 
 **Version:** 1.1.0  
 **Live URL:** https://notara.reliatrack.org  
-**Repository:** https://github.com/guychenya/lumen-notes-ai  
+**Repository:** https://github.com/guychenya/notara  
 **Status:** ✅ Production Ready
 
 ---
@@ -115,7 +115,7 @@ HOST=0.0.0.0
 ## 📊 Repository Structure
 
 ```
-lumen-notes-ai/
+notara/
 ├── App.tsx                 # Main application component
 ├── index.tsx              # Entry point
 ├── components/            # React components
@@ -169,8 +169,8 @@ lumen-notes-ai/
 
 ## 📞 Support
 
-- **Issues:** https://github.com/guychenya/lumen-notes-ai/issues
-- **Discussions:** https://github.com/guychenya/lumen-notes-ai/discussions
+- **Issues:** https://github.com/guychenya/notara/issues
+- **Discussions:** https://github.com/guychenya/notara/discussions
 
 ---
 
