@@ -1304,12 +1304,12 @@ const EditorWorkspace = () => {
                    }}
                    className={`h-full overflow-y-auto custom-scrollbar ${theme === 'light' ? 'bg-dotted-pattern-light' : 'bg-dotted-pattern-dark'}`}
                >
-                    <div className="flex-1 max-w-4xl">
+                    <div className="flex-1 max-w-4xl min-w-0">
                         <div className="p-8 pb-0">
                             <Breadcrumbs noteTitle={activeNote.title} tags={autoTags} />
                         </div>
                         <div 
-                            className={`prose ${theme === 'dark' ? 'dark:prose-invert' : ''} max-w-none p-8 pt-0`}
+                            className={`prose ${theme === 'dark' ? 'dark:prose-invert' : ''} max-w-full p-8 pt-0 overflow-hidden`}
                             dangerouslySetInnerHTML={{ __html: parseMarkdown(activeNote.content, notes) }}
                             onClick={(e) => {
                               const target = e.target as HTMLElement;
