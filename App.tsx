@@ -73,6 +73,7 @@ type ViewMode = 'edit' | 'split' | 'preview';
 const EditorWorkspace = () => {
   const { setSettingsOpen, config, connectionStatus } = useAI();
   const { notes, activeNote, activeNoteId, setActiveNoteId, addNote, updateNote, deleteNote, importNote } = useNotes();
+  const { folders, addFolder, updateFolder, deleteFolder } = useFolders();
   const { theme, toggleTheme } = useTheme();
   
   const [isGenerating, setIsGenerating] = useState(false);
@@ -83,6 +84,8 @@ const EditorWorkspace = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>();
+  const [showEnhancedSearch, setShowEnhancedSearch] = useState(false);
   
   // Phase 1: Command Palette & Focus Mode
   const [showCommandPalette, setShowCommandPalette] = useState(false);
@@ -866,24 +869,37 @@ const EditorWorkspace = () => {
       {isSidebarOpen && !focusMode && (
       <div className="w-64 bg-gray-50 dark:bg-[#111111] border-r border-gray-200 dark:border-[#222] flex flex-col min-w-[250px] shrink-0 print:hidden z-20">
         <div className="p-4 border-b border-gray-200 dark:border-[#222]">
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search notes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-[#333] rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-600"
-            />
+          <div className="relative flex gap-2">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search notes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setShowEnhancedSearch(true)}
+                className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-[#333] rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-600"
+              />
+            </div>
           </div>
         </div>
         
         <div className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
+           <FolderTree
+             folders={folders}
+             selectedFolderId={selectedFolderId}
+             onSelectFolder={setSelectedFolderId}
+             onAddFolder={addFolder}
+             onUpdateFolder={updateFolder}
+             onDeleteFolder={deleteFolder}
+           />
            <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wider">Notes</div>
-           {notes.filter(note => 
-             note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-             note.content.toLowerCase().includes(searchQuery.toLowerCase())
-           ).map(note => (
+           {notes.filter(note => {
+             const matchesSearch = note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               note.content.toLowerCase().includes(searchQuery.toLowerCase());
+             const matchesFolder = !selectedFolderId || note.folderId === selectedFolderId;
+             return matchesSearch && matchesFolder;
+           }).map(note => (
                <div key={note.id} className="relative group flex items-center">
                     <button 
                         onClick={() => setActiveNoteId(note.id)}
@@ -1146,6 +1162,12 @@ const EditorWorkspace = () => {
                         </button>
                         <button onClick={() => handleExport('txt')} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#333] hover:text-black dark:hover:text-white">
                             <File className="w-4 h-4" /> Plain Text (.txt)
+                        </button>
+                        <button onClick={() => activeNote && exportToHTML(activeNote)} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#333] hover:text-black dark:hover:text-white">
+                            <FileCode className="w-4 h-4" /> HTML (.html)
+                        </button>
+                        <button onClick={() => activeNote && exportToDOCX(activeNote)} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#333] hover:text-black dark:hover:text-white">
+                            <File className="w-4 h-4" /> Word (.doc)
                         </button>
                         <button onClick={() => handleExport('pdf')} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#333] hover:text-black dark:hover:text-white">
                             <Printer className="w-4 h-4" /> PDF (Print)
@@ -1435,6 +1457,13 @@ const EditorWorkspace = () => {
             onClose={() => setIsVoiceModeOpen(false)} 
             onInsert={(text) => insertTextAtCursor(text)}
         />
+        {showEnhancedSearch && (
+          <EnhancedSearch
+            notes={notes}
+            onSelectNote={setActiveNoteId}
+            onClose={() => setShowEnhancedSearch(false)}
+          />
+        )}
         <SlashCommandMenu 
             isOpen={slashMenuOpen} 
             position={slashMenuPos} 
@@ -1787,7 +1816,9 @@ const App: React.FC = () => {
   return (
     <AIProvider>
       <NotesProvider>
-        <EditorWorkspace />
+        <FolderProvider>
+          <EditorWorkspace />
+        </FolderProvider>
       </NotesProvider>
     </AIProvider>
   );
