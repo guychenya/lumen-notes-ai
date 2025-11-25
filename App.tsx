@@ -215,11 +215,7 @@ const EditorWorkspace = () => {
           // Re-attach the image reference definitions that are visually hidden.
           const imageRefs = activeNote.content.match(imageRefRegex) || [];
           const fullContent = val + (imageRefs.length > 0 ? '\n\n' + imageRefs.join('\n') : '');
-          
-          // Use requestAnimationFrame to prevent cursor jumping
-          requestAnimationFrame(() => {
-              updateNote(activeNote.id, { content: fullContent });
-          });
+          updateNote(activeNote.id, { content: fullContent });
       }
   };
 
