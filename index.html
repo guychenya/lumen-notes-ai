@@ -185,12 +185,19 @@
         padding: 0;
       }
       /* Dark mode overrides for prose */
-      .dark .prose-invert th, .dark .prose-invert td {
-        border: 1px solid #333;
+      .dark .prose-invert th, .dark .prose-invert td,
+      .dark .prose-lg th, .dark .prose-lg td {
+        border: 1px solid #444;
       }
-      .dark .prose-invert th {
-        background-color: #1A1A1A;
-        color: #10b981;
+      .dark .prose-invert th,
+      .dark .prose-lg th {
+        background-color: #0a0a0a;
+        color: #ffffff;
+      }
+      .dark .prose-invert td,
+      .dark .prose-lg td {
+        background-color: transparent;
+        color: #ffffff;
       }
       .dark .prose-invert blockquote {
         border-left: 4px solid #10b981;
