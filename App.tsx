@@ -404,6 +404,11 @@ const EditorWorkspace = () => {
   ];
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Don't interfere if slash menu is handling keys
+    if (slashMenuOpen && ['ArrowUp', 'ArrowDown', 'Enter', 'Escape'].includes(e.key)) {
+        return; // Let SlashCommandMenu handle it
+    }
+    
     // Only handle slash menu opening
     if (e.key === '/' && !slashMenuOpen) {
         if (textareaRef.current) {
@@ -416,12 +421,6 @@ const EditorWorkspace = () => {
             });
             setSlashMenuOpen(true);
         }
-    }
-    
-    // Close slash menu on Escape
-    if (e.key === 'Escape' && slashMenuOpen) {
-        e.preventDefault();
-        setSlashMenuOpen(false);
     }
   };
 
@@ -1280,7 +1279,7 @@ const EditorWorkspace = () => {
                >
                  <textarea 
                     ref={textareaRef}
-                    className="flex-1 w-full bg-transparent text-gray-700 dark:text-gray-300 font-mono text-sm p-6 pb-32 resize-none focus:outline-none custom-scrollbar leading-relaxed break-words whitespace-pre-wrap"
+                    className="flex-1 w-full bg-transparent text-gray-700 dark:text-gray-300 font-mono text-sm p-6 pb-20 resize-none focus:outline-none custom-scrollbar leading-relaxed break-words whitespace-pre-wrap"
                     placeholder="# Start typing your note here... (Type / for commands)"
                     value={editorContent}
                     onChange={(e) => handleContentChange(e.target.value)}
