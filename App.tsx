@@ -1794,30 +1794,34 @@ Results-driven professional with [X] years of experience in [industry/field]. Pr
 
                {/* Right: Preview */}
                <div 
-                   id="preview-pane"
                    style={{ 
                        width: viewMode === 'split' ? `${100 - splitPos}%` : viewMode === 'preview' ? '100%' : '0%',
                        display: viewMode === 'edit' ? 'none' : 'flex',
                        pointerEvents: isDragging ? 'none' : 'auto'
                    }}
-                   className={`h-full overflow-y-auto custom-scrollbar ${theme === 'light' ? 'bg-dotted-pattern-light' : 'bg-dotted-pattern-dark'} ${viewMode === 'preview' ? 'justify-center' : ''}`}
+                   className="h-full relative"
                >
-                    <div className={`flex-1 min-w-0 ${viewMode === 'preview' ? 'max-w-5xl mx-auto' : 'max-w-4xl'}`}>
-                        <div className="p-8 pb-0">
-                            <Breadcrumbs noteTitle={activeNote.title} tags={activeNote.tags} />
+                   <div 
+                       id="preview-pane"
+                       className={`flex-1 overflow-y-auto custom-scrollbar ${theme === 'light' ? 'bg-dotted-pattern-light' : 'bg-dotted-pattern-dark'} ${viewMode === 'preview' ? 'flex justify-center' : ''}`}
+                   >
+                        <div className={`flex-1 min-w-0 ${viewMode === 'preview' ? 'max-w-5xl mx-auto' : 'max-w-4xl'}`}>
+                            <div className="p-8 pb-0">
+                                <Breadcrumbs noteTitle={activeNote.title} tags={activeNote.tags} />
+                            </div>
+                            <div 
+                                className={`prose ${theme === 'dark' ? 'dark:prose-invert' : ''} prose-lg max-w-full p-8 pt-0 overflow-hidden`}
+                                dangerouslySetInnerHTML={{ __html: parseMarkdown(activeNote.content, notes) }}
+                                onClick={(e) => {
+                                  const target = e.target as HTMLElement;
+                                  if (target.classList.contains('wiki-link')) {
+                                    e.preventDefault();
+                                    const noteId = target.dataset.noteId;
+                                    if (noteId) setActiveNoteId(noteId);
+                                  }
+                                }}
+                            />
                         </div>
-                        <div 
-                            className={`prose ${theme === 'dark' ? 'dark:prose-invert' : ''} prose-lg max-w-full p-8 pt-0 overflow-hidden`}
-                            dangerouslySetInnerHTML={{ __html: parseMarkdown(activeNote.content, notes) }}
-                            onClick={(e) => {
-                              const target = e.target as HTMLElement;
-                              if (target.classList.contains('wiki-link')) {
-                                e.preventDefault();
-                                const noteId = target.dataset.noteId;
-                                if (noteId) setActiveNoteId(noteId);
-                              }
-                            }}
-                        />
                     </div>
                     {viewMode === 'split' && <TableOfContents content={activeNote.content} />}
                </div>
