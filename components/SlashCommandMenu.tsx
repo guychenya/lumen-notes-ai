@@ -57,6 +57,8 @@ export const SlashCommandMenu: React.FC<Props> = ({ isOpen, position, commands, 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return;
 
+      console.log('SlashMenu key:', e.key);
+
       // Handle arrow keys and Enter for menu navigation
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -71,6 +73,7 @@ export const SlashCommandMenu: React.FC<Props> = ({ isOpen, position, commands, 
       } else if (e.key === 'Enter') {
         e.preventDefault();
         e.stopPropagation();
+        console.log('Enter pressed, selected:', filteredCommands[selectedIndex]);
         onSelect(filteredCommands[selectedIndex]);
       } else if (e.key === 'Escape') {
         e.preventDefault();
@@ -141,7 +144,10 @@ export const SlashCommandMenu: React.FC<Props> = ({ isOpen, position, commands, 
         {filteredCommands.map((cmd, index) => (
           <button
             key={cmd.id}
-            onClick={() => onSelect(cmd)}
+            onClick={() => {
+              console.log('Button clicked:', cmd.id);
+              onSelect(cmd);
+            }}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
               index === selectedIndex 
                 ? 'bg-emerald-50 dark:bg-emerald-600/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-600/20' 
