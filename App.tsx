@@ -439,45 +439,74 @@ const EditorWorkspace = () => {
   };
 
   const executeSlashCommand = (command: SlashCommand) => {
-    if (!textareaRef.current) return;
+    if (!textareaRef.current || !activeNote) return;
     
     const textarea = textareaRef.current;
     const cursorPos = textarea.selectionStart;
-    const val = textarea.value;
+    const content = activeNote.content;
 
-    // Find the slash position (should be right before cursor)
-    const slashPos = val.lastIndexOf('/', cursorPos);
+    // Find the slash position
+    const slashPos = content.lastIndexOf('/', cursorPos);
     
     if (slashPos === -1) {
       setSlashMenuOpen(false);
       return;
     }
 
-    // Remove the slash
-    const beforeSlash = val.substring(0, slashPos);
-    const afterSlash = val.substring(cursorPos);
+    // Remove the slash and get the text to insert based on command
+    const beforeSlash = content.substring(0, slashPos);
+    const afterSlash = content.substring(cursorPos);
     
-    const newContent = beforeSlash + afterSlash;
+    // Get the text to insert from the command
+    let textToInsert = '';
+    const commandId = command.id;
     
-    // Update content first
-    if (activeNote) {
-      updateNote(activeNote.id, { content: newContent });
+    switch(commandId) {
+      case 'h1': textToInsert = '# '; break;
+      case 'h2': textToInsert = '## '; break;
+      case 'h3': textToInsert = '### '; break;
+      case 'text': textToInsert = ''; break;
+      case 'bullet': textToInsert = '- '; break;
+      case 'numbered': textToInsert = '1. '; break;
+      case 'todo': textToInsert = '- [ ] '; break;
+      case 'table': textToInsert = '\n| Header 1 | Header 2 |\n| -------- | -------- |\n| Cell 1   | Cell 2   |\n'; break;
+      case 'quote': textToInsert = '> '; break;
+      case 'code': textToInsert = '\n```\ncode here\n```\n'; break;
+      case 'divider': textToInsert = '\n---\n'; break;
+      case 'image-upload':
+        setSlashMenuOpen(false);
+        imageFileInputRef.current?.click();
+        return;
+      case 'image-url':
+        setSlashMenuOpen(false);
+        const url = prompt("Enter Image URL:");
+        if(url) {
+          const newContent = beforeSlash + `![Image](${url})` + afterSlash;
+          updateNote(activeNote.id, { content: newContent });
+        }
+        return;
+      case 'video':
+        setSlashMenuOpen(false);
+        insertVideoBlock();
+        return;
+      default: textToInsert = '';
     }
-
-    // Wait for React to update, then set cursor and execute
-    requestAnimationFrame(() => {
-      if (textareaRef.current) {
-        textareaRef.current.focus();
-        textareaRef.current.setSelectionRange(slashPos, slashPos);
-        
-        // Execute command action after another frame to ensure cursor is set
-        requestAnimationFrame(() => {
-          command.action();
-        });
-      }
-    });
+    
+    // Insert the text
+    const newContent = beforeSlash + textToInsert + afterSlash;
+    const newCursorPos = slashPos + textToInsert.length;
+    
+    updateNote(activeNote.id, { content: newContent });
     
     setSlashMenuOpen(false);
+    
+    // Set cursor position
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }, 0);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

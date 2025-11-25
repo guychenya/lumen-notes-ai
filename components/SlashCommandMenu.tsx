@@ -18,11 +18,15 @@ interface Props {
 
 export const SlashCommandMenu: React.FC<Props> = ({ isOpen, position, commands, onSelect, onClose }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isOpen) setSelectedIndex(0);
+    if (isOpen) {
+      setSelectedIndex(0);
+      setSearchQuery('');
+    }
   }, [isOpen]);
 
   // FIX: Added a click-outside handler to ensure the menu closes properly.
@@ -49,25 +53,42 @@ export const SlashCommandMenu: React.FC<Props> = ({ isOpen, position, commands, 
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         e.stopPropagation();
-        setSelectedIndex(prev => (prev + 1) % commands.length);
+        const filtered = filteredCommands;
+        setSelectedIndex(prev => (prev + 1) % filtered.length);
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         e.stopPropagation();
-        setSelectedIndex(prev => (prev - 1 + commands.length) % commands.length);
+        const filtered = filteredCommands;
+        setSelectedIndex(prev => (prev - 1 + filtered.length) % filtered.length);
       } else if (e.key === 'Enter') {
         e.preventDefault();
         e.stopPropagation();
-        onSelect(commands[selectedIndex]);
+        onSelect(filteredCommands[selectedIndex]);
       } else if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
         onClose();
+      } else if (e.key === 'Backspace') {
+        setSearchQuery(prev => prev.slice(0, -1));
+        setSelectedIndex(0);
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+        // Type to search
+        setSearchQuery(prev => prev + e.key);
+        setSelectedIndex(0);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, selectedIndex, onSelect, onClose, commands]);
+  }, [isOpen, selectedIndex, onSelect, onClose, searchQuery]);
+
+  // Filter commands based on search query
+  const filteredCommands = searchQuery
+    ? commands.filter(cmd => 
+        cmd.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        cmd.description.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : commands;
 
   useEffect(() => {
     if (scrollContainerRef.current) {
@@ -113,11 +134,11 @@ export const SlashCommandMenu: React.FC<Props> = ({ isOpen, position, commands, 
       }}
     >
       <div className="px-3 py-2 border-b border-gray-200 dark:border-[#2A2A2A] bg-gray-50 dark:bg-[#161616] text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wider flex justify-between items-center">
-        <span>Insert Block</span>
-        <span className="text-[10px] bg-gray-200 dark:bg-[#222] px-1.5 rounded border border-gray-300 dark:border-[#333]">ESC to close</span>
+        <span>Insert Block {searchQuery && `(${searchQuery})`}</span>
+        <span className="text-[10px] bg-gray-200 dark:bg-[#222] px-1.5 rounded border border-gray-300 dark:border-[#333]">Type to search</span>
       </div>
       <div ref={scrollContainerRef} className="overflow-y-auto p-1 max-h-[280px]">
-        {commands.map((cmd, index) => (
+        {filteredCommands.map((cmd, index) => (
           <button
             key={cmd.id}
             onClick={() => onSelect(cmd)}
