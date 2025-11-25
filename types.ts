@@ -29,4 +29,14 @@ export interface Note {
   title: string;
   content: string;
   updatedAt: number;
+  folderId?: string;
+  tags?: string[];
+  isFavorite?: boolean;
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  parentId?: string;
+  createdAt: number;
 }

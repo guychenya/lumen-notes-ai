@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { AIProvider, useAI } from './context/AIContext';
 import { NotesProvider, useNotes } from './context/NotesContext';
+import { FolderProvider, useFolders } from './context/FolderContext';
 import { useTheme } from './context/ThemeContext';
 import { AISettingsModal } from './components/AISettingsModal';
 import { Button } from './components/ui/Button';
@@ -9,9 +10,12 @@ import { htmlToMarkdown } from './services/converter';
 import { parseMarkdown } from './services/markdown';
 import { TableOfContents } from './components/TableOfContents';
 import { Breadcrumbs } from './components/Breadcrumbs';
+import { FolderTree } from './components/FolderTree';
+import { EnhancedSearch } from './components/EnhancedSearch';
 import { SlashCommandMenu, type SlashCommand } from './components/SlashCommandMenu';
 import { VoiceModeModal } from './components/VoiceModeModal';
 import { importObsidianVault, exportAsObsidianVault } from './services/obsidian';
+import { exportToHTML, exportToDOCX, batchExport } from './services/export';
 import { ChatMessage } from './types';
 import 'highlight.js/styles/github-dark.css';
 import { 
