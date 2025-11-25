@@ -304,8 +304,6 @@ const EditorWorkspace = () => {
       insertTextAtCursor(block);
   };
 
-  // FIX: Removed useMemo from slashCommands to prevent a stale closure bug.
-  // This ensures that actions always have access to the current editor state.
   const slashCommands: SlashCommand[] = [
       {
         id: 'h1',
@@ -439,114 +437,40 @@ const EditorWorkspace = () => {
   };
 
   const executeSlashCommand = (command: SlashCommand) => {
-    if (!textareaRef.current || !activeNote) {
-      console.log('No textarea or active note');
-      return;
-    }
-    
+    if (!textareaRef.current || !activeNote) return;
+
     const textarea = textareaRef.current;
     const cursorPos = textarea.selectionStart;
-    const content = activeNote.content;
+    const content = textarea.value; // Use the current value from the textarea directly
 
-    console.log('Execute command:', command.id, 'Cursor:', cursorPos, 'Content length:', content.length);
+    // Find the slash that triggered the menu
+    const slashPos = content.lastIndexOf('/', cursorPos - 1);
 
-    // Find the slash position
-    const slashPos = content.lastIndexOf('/', cursorPos);
-    
     if (slashPos === -1) {
-      console.log('No slash found');
       setSlashMenuOpen(false);
       return;
     }
 
-    console.log('Slash at position:', slashPos);
-
-    // Remove the slash
+    // Remove the slash and any text typed after it to open the menu
     const beforeSlash = content.substring(0, slashPos);
     const afterSlash = content.substring(cursorPos);
-    
-    // Get the text to insert
-    let textToInsert = '';
-    
-    switch(command.id) {
-      case 'h1': textToInsert = '# '; break;
-      case 'h2': textToInsert = '## '; break;
-      case 'h3': textToInsert = '### '; break;
-      case 'text': textToInsert = ''; break;
-      case 'bullet': textToInsert = '- '; break;
-      case 'numbered': textToInsert = '1. '; break;
-      case 'todo': textToInsert = '- [ ] '; break;
-      case 'table': textToInsert = '\n| Header 1 | Header 2 |\n| -------- | -------- |\n| Cell 1   | Cell 2   |\n'; break;
-      case 'quote': textToInsert = '> '; break;
-      case 'code': textToInsert = '\n```\ncode here\n```\n'; break;
-      case 'divider': textToInsert = '\n---\n'; break;
-      case 'image-upload':
-        updateNote(activeNote.id, { content: beforeSlash + afterSlash });
-        setSlashMenuOpen(false);
-        setTimeout(() => imageFileInputRef.current?.click(), 100);
-        return;
-      case 'image-url':
-        const url = prompt("Enter Image URL:");
-        if(url) {
-          const newContent = beforeSlash + `![Image](${url})` + afterSlash;
-          updateNote(activeNote.id, { content: newContent });
-        }
-        setSlashMenuOpen(false);
-        return;
-      case 'video':
-        const videoUrl = prompt("Enter Video URL (YouTube or MP4):");
-        if (!videoUrl) {
-          setSlashMenuOpen(false);
-          return;
-        }
-        
-        let videoId = '';
-        if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-          if (videoUrl.includes('youtu.be')) {
-            videoId = videoUrl.split('/').pop() || '';
-          } else if (videoUrl.includes('v=')) {
-            videoId = videoUrl.split('v=')[1]?.split('&')[0] || '';
-          } else if (videoUrl.includes('embed/')) {
-            videoId = videoUrl.split('embed/')[1]?.split('?')[0] || '';
-          }
-        }
-        
-        let videoBlock = '';
-        if (videoId) {
-          videoBlock = `\n<div class="aspect-video my-6 rounded-xl overflow-hidden border border-gray-200 dark:border-[#333] shadow-lg"><iframe src="https://www.youtube.com/embed/${videoId}" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>\n`;
-        } else {
-          videoBlock = `\n<div class="aspect-video my-6 rounded-xl overflow-hidden border border-gray-200 dark:border-[#333] shadow-lg"><video src="${videoUrl}" controls class="w-full h-full"></video></div>\n`;
-        }
-        
-        updateNote(activeNote.id, { content: beforeSlash + videoBlock + afterSlash });
-        setSlashMenuOpen(false);
-        return;
-      default: 
-        console.log('Unknown command:', command.id);
-        textToInsert = '';
-    }
-    
-    console.log('Inserting text:', textToInsert);
-    
-    // Build new content
-    const newContent = beforeSlash + textToInsert + afterSlash;
-    const newCursorPos = slashPos + textToInsert.length;
-    
-    console.log('New content length:', newContent.length, 'New cursor:', newCursorPos);
-    
-    // Update note
+    const newContent = beforeSlash + afterSlash;
+
+    // First, update the state to remove the slash command text
     updateNote(activeNote.id, { content: newContent });
-    
     setSlashMenuOpen(false);
-    
-    // Set cursor position after React updates
+
+    // Now, use a timeout to ensure the state update has rendered,
+    // then insert the new block and position the cursor correctly.
     setTimeout(() => {
-      if (textareaRef.current) {
-        textareaRef.current.focus();
-        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
-        console.log('Cursor set to:', newCursorPos);
-      }
-    }, 50);
+      if (!textareaRef.current) return;
+      
+      // The cursor should be at the position where the slash was
+      textareaRef.current.setSelectionRange(slashPos, slashPos);
+
+      // Now, execute the command's action
+      command.action();
+    }, 0);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

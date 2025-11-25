@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { AIConfig, ConnectionStatus } from '../types';
 import { LLMService } from '../services/llmService';
@@ -27,25 +26,25 @@ export const AIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isSettingsOpen, setSettingsOpen] = useLocalStorage<boolean>('notara-ai-modal-open', false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('checking');
 
-  const checkConnection = async () => {
+  const checkConnection = useCallback(async () => {
     setConnectionStatus('checking');
     const service = new LLMService(config);
     const result = await service.verifyConnection();
     setConnectionStatus(result.success ? 'connected' : 'disconnected');
-  };
+  }, [config]);
 
-  // Check connection whenever config changes
   useEffect(() => {
     checkConnection();
     
-    // Optional: Poll for local connections (Ollama) in case it starts up later
-    let interval: any;
+    let interval: NodeJS.Timeout | undefined;
     if (config.provider === 'ollama') {
       interval = setInterval(checkConnection, 30000);
     }
     
-    return () => clearInterval(interval);
-  }, [config]);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [config, checkConnection]);
 
   return (
     <AIContext.Provider value={{ config, setConfig, isSettingsOpen, setSettingsOpen, connectionStatus, checkConnection }}>

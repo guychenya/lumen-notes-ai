@@ -3,6 +3,43 @@
 import { AIConfig, ChatMessage } from '../types';
 import { GoogleGenAI } from '@google/genai';
 
+interface OllamaModel {
+  name: string;
+  modified_at: string;
+  size: number;
+}
+
+interface OllamaTagsResponse {
+  models: OllamaModel[];
+}
+
+interface GeminiModel {
+  name: string;
+  displayName?: string;
+}
+
+interface GeminiModelsResponse {
+  models: GeminiModel[];
+}
+
+interface AnthropicModel {
+  id: string;
+  type: string;
+}
+
+interface AnthropicModelsResponse {
+  data: AnthropicModel[];
+}
+
+interface OpenAIModel {
+  id: string;
+  object: string;
+}
+
+interface OpenAIModelsResponse {
+  data: OpenAIModel[];
+}
+
 export class LLMService {
   private config: AIConfig;
 
@@ -39,17 +76,17 @@ export class LLMService {
       try {
         const res = await this.fetchOllamaTags(cleanBaseUrl);
         if (res.ok) {
-          const data = await res.json();
-          const models = data.models.map((m: any) => m.name);
+          const data: OllamaTagsResponse = await res.json();
+          const models = data.models.map((m) => m.name);
           return { success: true, message: 'Connected to Ollama successfully.', models };
         }
         return { success: false, message: `Ollama connected but returned error: ${res.status}` };
-      } catch (error: any) {
-        let msg = error instanceof Error ? error.message : String(error);
-        if (msg.includes('Failed to fetch')) {
-            msg += " (Ensure Ollama is running and OLLAMA_ORIGINS='*' is set)";
-        }
-        return { success: false, message: `Connection Failed: ${msg}` };
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        const enhancedMsg = msg.includes('Failed to fetch') 
+          ? `${msg} (Ensure Ollama is running and OLLAMA_ORIGINS='*' is set)`
+          : msg;
+        return { success: false, message: `Connection Failed: ${enhancedMsg}` };
       }
     }
 
@@ -58,13 +95,14 @@ export class LLMService {
       try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
         if (res.ok) {
-           const data = await res.json();
-           const models = data.models.map((m: any) => m.name.replace('models/', ''));
+           const data: GeminiModelsResponse = await res.json();
+           const models = data.models.map((m) => m.name.replace('models/', ''));
            return { success: true, message: 'Gemini Key is valid.', models };
         }
         return { success: false, message: `Gemini Error: ${res.statusText}` };
-      } catch (e: any) {
-        return { success: false, message: `Network Error: ${e.message}` };
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        return { success: false, message: `Network Error: ${msg}` };
       }
     }
 
@@ -75,12 +113,12 @@ export class LLMService {
                 headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }
             });
             if (res.ok) {
-                const data = await res.json();
-                const models = data.data.map((m: any) => m.id);
+                const data: AnthropicModelsResponse = await res.json();
+                const models = data.data.map((m) => m.id);
                 return { success: true, message: 'Anthropic Key is valid.', models };
             }
             return { success: false, message: `Anthropic Error: ${res.status}` };
-        } catch (e: any) {
+        } catch (error) {
             return { success: false, message: `Anthropic may block browser requests (CORS). This key might be valid but can't be tested here.` };
         }
     }
@@ -104,14 +142,15 @@ export class LLMService {
 
             const res = await fetch(endpoint, { headers });
             if (res.ok) {
-                const data = await res.json();
-                const models = data.data.map((m: any) => m.id).sort();
+                const data: OpenAIModelsResponse = await res.json();
+                const models = data.data.map((m) => m.id).sort();
                 return { success: true, message: `${provider.charAt(0).toUpperCase() + provider.slice(1)} API is valid.`, models };
             }
             const errorText = await res.text();
             return { success: false, message: `${provider} Error: ${res.status} ${res.statusText} - ${errorText.slice(0, 100)}` };
-        } catch (e: any) {
-            return { success: false, message: `Network Error (CORS?): ${e.message}` };
+        } catch (error) {
+            const msg = error instanceof Error ? error.message : String(error);
+            return { success: false, message: `Network Error (CORS?): ${msg}` };
         }
     }
 
@@ -145,9 +184,9 @@ export class LLMService {
       return ''; // Should not happen
   }
 
-  async *streamResponse(messages: ChatMessage[]): AsyncGenerator<string, void, unknown> {
+  async *streamResponse(messages: ChatMessage[], signal?: AbortSignal): AsyncGenerator<string, void, unknown> {
     const { provider, baseUrl, apiKey, modelName } = this.config;
-    const model = modelName || 'llama3'; // Default model
+    const model = modelName || 'llama3';
 
     try {
         if (provider === 'ollama') {
@@ -159,6 +198,7 @@ export class LLMService {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ model, messages, stream: true }),
+                signal,
             });
             
             if (!response.body) throw new Error('No response body');
@@ -195,7 +235,8 @@ export class LLMService {
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers,
-                body: JSON.stringify({ model, messages, stream: true })
+                body: JSON.stringify({ model, messages, stream: true }),
+                signal,
             });
 
             if (!response.ok) {
@@ -261,13 +302,13 @@ export class LLMService {
             yield "Provider implementation not fully ready.";
         }
 
-    } catch (error: any) {
+    } catch (error) {
         console.error("Streaming Error:", error);
-        let msg = error.message || String(error);
-        if (msg.includes('Failed to fetch')) {
-             msg += " (Check: Is the server running? Is CORS configured?)";
-        }
-        yield `\n[Error: ${msg}]`;
+        const msg = error instanceof Error ? error.message : String(error);
+        const enhancedMsg = msg.includes('Failed to fetch')
+          ? `${msg} (Check: Is the server running? Is CORS configured?)`
+          : msg;
+        yield `\n[Error: ${enhancedMsg}]`;
     }
   }
 }

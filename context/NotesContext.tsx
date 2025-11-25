@@ -82,14 +82,23 @@ export const NotesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const updateNote = (id: string, updates: Partial<Note>) => {
     setNotes(prevNotes => {
-        const noteToUpdate = prevNotes.find(note => note.id === id);
-        if (!noteToUpdate) return prevNotes;
-        
-        const updatedNote = { ...noteToUpdate, ...updates, updatedAt: Date.now() };
-        
-        // Move updated note to the top of the list
-        const otherNotes = prevNotes.filter(note => note.id !== id);
-        return [updatedNote, ...otherNotes];
+      const index = prevNotes.findIndex(note => note.id === id);
+      if (index === -1) return prevNotes;
+
+      const updatedNote = { ...prevNotes[index], ...updates, updatedAt: Date.now() };
+
+      // If the note is already at the top, just update it in place
+      if (index === 0) {
+        const newNotes = [...prevNotes];
+        newNotes[0] = updatedNote;
+        return newNotes;
+      }
+
+      // Otherwise, move it to the top
+      const newNotes = [...prevNotes];
+      newNotes.splice(index, 1);
+      newNotes.unshift(updatedNote);
+      return newNotes;
     });
   };
 

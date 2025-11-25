@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAI } from '../context/AIContext';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { AIConfig, OllamaTagsResponse } from '../types';
+import { AIConfig } from '../types';
 import { 
   AlertCircle, 
   CheckCircle2, 
@@ -138,7 +138,7 @@ export const AISettingsModal: React.FC = () => {
       if (result.success) {
           const cleanUrl = currentConfig.baseUrl.replace(/\/$/, '').replace('localhost', '1227.0.0.1');
           const res = await fetch(`${cleanUrl}/api/tags`);
-          const data: OllamaTagsResponse = await res.json();
+          const data: { models: Array<{ name: string }> } = await res.json();
           const models = data.models.map(m => m.name);
           setAvailableModels(models);
            if (!models.includes(currentConfig.modelName) && models.length > 0) {
