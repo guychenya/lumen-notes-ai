@@ -404,19 +404,7 @@ const EditorWorkspace = () => {
   ];
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Only intercept navigation keys when slash menu is open
-    if (slashMenuOpen) {
-        if (['ArrowUp', 'ArrowDown', 'Escape'].includes(e.key)) {
-            e.preventDefault(); 
-            return;
-        }
-        // Close menu on any other key except Enter (let Enter work normally)
-        if (e.key !== 'Enter' && !e.ctrlKey && !e.altKey && !e.metaKey && e.key.length === 1 && e.key !== '/') {
-            setSlashMenuOpen(false);
-        }
-    }
-
-    // Open slash menu on '/' key
+    // Only handle slash menu opening
     if (e.key === '/' && !slashMenuOpen) {
         if (textareaRef.current) {
             const pos = textareaRef.current.selectionStart;
@@ -428,6 +416,12 @@ const EditorWorkspace = () => {
             });
             setSlashMenuOpen(true);
         }
+    }
+    
+    // Close slash menu on Escape
+    if (e.key === 'Escape' && slashMenuOpen) {
+        e.preventDefault();
+        setSlashMenuOpen(false);
     }
   };
 
